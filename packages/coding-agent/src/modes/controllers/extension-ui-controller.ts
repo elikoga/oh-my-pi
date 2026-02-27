@@ -577,7 +577,26 @@ export class ExtensionUiController {
 		};
 		this.#hookSelectorOverlay?.hide();
 		this.#hookSelectorOverlay = undefined;
-		const maxVisible = Math.max(4, Math.min(15, this.ctx.ui.terminal.rows - 12));
+		const termRows = this.ctx.ui.terminal.rows;
+		const maxVisible = Math.max(4, Math.min(15, termRows - 12));
+		const numVisible = Math.min(options.length, maxVisible);
+		const hasPagination = options.length > maxVisible ? 1 : 0;
+		const extraBorderLines = dialogOptions?.outline ? 2 : 0;
+		// 6 fixed lines: top border + spacer + title + spacer + spacer + help
+		const renderedHeight = 6 + extraBorderLines + numVisible + hasPagination;
+		const maxOverlayHeight = Math.floor(termRows * 0.7);
+		const effectiveHeight = Math.min(renderedHeight, maxOverlayHeight);
+		// The overlay (anchor: bottom-center, margin: 1) covers rows 2..overlayHeight+1 from the
+		// terminal bottom. When the component tree is shorter than the terminal ("slack"), the overlay
+		// is already below all content — no padding needed. When the content is tall enough that the
+		// viewport scroll puts the overlay over chat, we need exactly (effectiveHeight - editorHeight)
+		// blank lines. Measure baseline content height with padding at 0 to compute the slack.
+		this.ctx.selectorPadding.setLines(0);
+		const termCols = this.ctx.ui.terminal.columns;
+		const contentHeight = this.ctx.ui.render(termCols).length;
+		const editorHeight = this.ctx.editorContainer.render(termCols).length;
+		const needsPadding = contentHeight + effectiveHeight - editorHeight > termRows;
+		this.ctx.selectorPadding.setLines(needsPadding ? Math.max(0, effectiveHeight - editorHeight) : 0);
 		this.ctx.hookSelector = new HookSelectorComponent(
 			title,
 			options,
@@ -615,6 +634,7 @@ export class ExtensionUiController {
 		this.#hookSelectorOverlay?.hide();
 		this.#hookSelectorOverlay = undefined;
 		this.ctx.hookSelector = undefined;
+		this.ctx.selectorPadding.setLines(0);
 		this.ctx.ui.setFocus(this.ctx.editor);
 		this.ctx.ui.requestRender();
 	}

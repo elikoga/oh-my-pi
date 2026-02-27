@@ -92,6 +92,7 @@ export class InteractiveMode implements InteractiveModeContext {
 	todoContainer: Container;
 	editor: CustomEditor;
 	editorContainer: Container;
+	selectorPadding: Spacer;
 	statusLine: StatusLineComponent;
 
 	isInitialized = false;
@@ -191,6 +192,7 @@ export class InteractiveMode implements InteractiveModeContext {
 		this.pendingMessagesContainer = new Container();
 		this.statusContainer = new Container();
 		this.todoContainer = new Container();
+		this.selectorPadding = new Spacer(0);
 		this.editor = new CustomEditor(getEditorTheme());
 		this.editor.setUseTerminalCursor(this.ui.getShowHardwareCursor());
 		this.editor.setAutocompleteMaxVisible(settings.get("autocompleteMaxVisible"));
@@ -329,6 +331,7 @@ export class InteractiveMode implements InteractiveModeContext {
 		this.ui.addChild(this.todoContainer);
 		this.ui.addChild(this.statusLine); // Only renders hook statuses (main status in editor border)
 		this.ui.addChild(new Spacer(1));
+		this.ui.addChild(this.selectorPadding);
 		this.ui.addChild(this.editorContainer);
 		this.ui.setFocus(this.editor);
 

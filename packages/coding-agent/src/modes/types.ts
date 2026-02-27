@@ -50,6 +50,7 @@ export interface InteractiveModeContext {
 	todoContainer: Container;
 	editor: CustomEditor;
 	editorContainer: Container;
+	selectorPadding: Spacer;
 	statusLine: StatusLineComponent;
 
 	// Session access

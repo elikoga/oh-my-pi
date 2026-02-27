@@ -96,8 +96,6 @@ export class HookSelectorComponent extends Container {
 		}
 		this.addChild(new Spacer(1));
 		this.addChild(new Text(theme.fg("dim", "up/down navigate  enter select  esc cancel"), 1, 0));
-		this.addChild(new Spacer(1));
-		this.addChild(new DynamicBorder());
 
 		this.#updateList();
 	}
