@@ -32,6 +32,16 @@ import { type SessionInfo, SessionManager } from "./session/session-manager";
 import { resolvePromptInput } from "./system-prompt";
 import { getChangelogPath, getNewEntries, parseChangelog } from "./utils/changelog";
 
+function isNewerVersion(a: string, b: string): boolean {
+	const pa = a.split(".").map(Number);
+	const pb = b.split(".").map(Number);
+	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+		const na = pa[i] ?? 0;
+		const nb = pb[i] ?? 0;
+		if (na !== nb) return na > nb;
+	}
+	return false;
+}
 async function checkForNewVersion(currentVersion: string): Promise<string | undefined> {
 	try {
 		const response = await fetch("https://registry.npmjs.org/@oh-my-pi/pi-coding-agent/latest");
@@ -40,7 +50,7 @@ async function checkForNewVersion(currentVersion: string): Promise<string | unde
 		const data = (await response.json()) as { version?: string };
 		const latestVersion = data.version;
 
-		if (latestVersion && latestVersion !== currentVersion) {
+		if (latestVersion && isNewerVersion(latestVersion, currentVersion)) {
 			return latestVersion;
 		}
 
