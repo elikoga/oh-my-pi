@@ -97,7 +97,7 @@ import {
 	warmupLspServers,
 } from "./tools";
 import { ToolContextStore } from "./tools/context";
-import { getGeminiImageTools } from "./tools/gemini-image";
+import { getGeminiImageToolsWithRegistry } from "./tools/gemini-image";
 import { wrapToolWithMetaNotice } from "./tools/output-meta";
 import { PendingActionStore } from "./tools/pending-action";
 import { EventBus } from "./utils/event-bus";
@@ -900,8 +900,8 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		}
 	}
 
-	// Add Gemini image tools if GEMINI_API_KEY (or GOOGLE_API_KEY) is available
-	const geminiImageTools = await logger.timeAsync("getGeminiImageTools", getGeminiImageTools);
+	// Add Gemini image tools if any image API credentials are available (Gemini, OpenRouter, or Antigravity)
+	const geminiImageTools = await logger.timeAsync("getGeminiImageTools", () => getGeminiImageToolsWithRegistry(modelRegistry));
 	if (geminiImageTools.length > 0) {
 		customTools.push(...(geminiImageTools as unknown as CustomTool[]));
 	}

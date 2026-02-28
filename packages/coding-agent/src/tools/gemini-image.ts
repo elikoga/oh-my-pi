@@ -35,11 +35,17 @@ const imageSizeSchema = StringEnum(["1024x1024", "1536x1024", "1024x1536"], {
 	description: "Image size, mainly for gemini-3-pro-image-preview.",
 });
 
+const referenceTypeSchema = StringEnum(["style", "subject", "person"], {
+	description:
+		'How to use this image: "style" applies its visual aesthetic, "subject" preserves a specific object or scene element, "person" preserves a human\'s identity and appearance.',
+});
+
 const inputImageSchema = Type.Object(
 	{
 		path: Type.Optional(Type.String({ description: "Path to an input image file." })),
 		data: Type.Optional(Type.String({ description: "Base64 image data or a data: URL." })),
 		mime_type: Type.Optional(Type.String({ description: "Required for raw base64 data." })),
+		reference_type: Type.Optional(referenceTypeSchema),
 	},
 	{ additionalProperties: false },
 );
@@ -88,7 +94,7 @@ const baseImageSchema = Type.Object(
 		changes: Type.Optional(
 			Type.Array(Type.String(), {
 				description:
-					"For edits: specific changes to make, as well as, what to keep unchanged (e.g., ['Change the tie to green', 'Remove the car in background']). Use with input_images.",
+				"For edits: specific changes to make, as well as, what to keep unchanged (e.g., ['Change the tie to green', 'Remove the car in background']). Use with `input`."
 			}),
 		),
 		aspect_ratio: Type.Optional(aspectRatioSchema),
@@ -136,6 +142,22 @@ function assemblePrompt(params: GeminiImageParams): string {
 	// Edit mode: changes and preserve directives
 	if (params.changes?.length) {
 		prompt += `\n\nChanges:\n${params.changes.map(c => `- ${c}`).join("\n")}`;
+	}
+
+	// Reference image role annotations when types are provided
+	const typedInputs = params.input?.filter(img => img.reference_type);
+	if (typedInputs?.length) {
+		const roleLines = typedInputs.map(img => {
+			const idx = params.input!.indexOf(img) + 1;
+			const label =
+				img.reference_type === "style"
+					? "visual style/aesthetic reference (apply this aesthetic)"
+					: img.reference_type === "person"
+						? "person identity reference (preserve this person's appearance)"
+						: "subject/object reference (preserve and include this element)";
+			return `- Image ${idx}: ${label}`;
+		});
+		prompt += `\n\nReference image roles:\n${roleLines.join("\n")}`;
 	}
 
 	return prompt;
@@ -248,6 +270,7 @@ interface ImageInput {
 	path?: string;
 	data?: string;
 	mime_type?: string;
+	reference_type?: "style" | "subject" | "person";
 }
 
 interface InlineImageData {
@@ -446,7 +469,7 @@ async function resolveInputImage(input: ImageInput, cwd: string): Promise<Inline
 		return { data: normalized.data, mimeType };
 	}
 
-	throw new Error("input_images entries must include either path or data.");
+	throw new Error("input entries must include either path or data.");
 }
 
 function getExtensionForMime(mimeType: string): string {
