@@ -889,18 +889,19 @@ export class TUI extends Container {
 		const widthChanged = this.#previousWidth !== 0 && this.#previousWidth !== width;
 		const heightChanged = this.#previousHeight !== 0 && this.#previousHeight !== height;
 
-		// === Hard reset: clear scrollback + viewport, write ALL content lines from 0. ===
-		// Used only for first render and width changes (scrollback is stale at old width).
-		// After clearing, writing all lines naturally populates scrollback so the user
-		// can scroll through history.
+		// === Hard reset: home + clear viewport, write ALL content lines from 0. ===
+		// Used only for first render and width changes (line wrapping changed).
+		// Writing all lines naturally populates scrollback so the user can scroll
+		// through history. We do NOT erase scrollback (\x1b[3J) here — that would
+		// wipe the user's terminal history on every startup, resize, or force render.
 		const hardReset = (clear: boolean): void => {
 			this.#fullRedrawCount += 1;
 			const overflow = Math.max(0, newLines.length - height);
 			let buffer = "\x1b[?2026h"; // Begin synchronized output
 			if (clear) {
-				// Clear scrollback + home + clear viewport.
+				// Home + clear viewport. Does NOT touch scrollback history.
 				// \x1b[H always homes — does not depend on hardwareCursorRow being correct.
-				buffer += "\x1b[3J\x1b[H\x1b[J";
+				buffer += "\x1b[H\x1b[J";
 			}
 			for (let i = 0; i < newLines.length; i++) {
 				if (i > 0) buffer += "\r\n";
@@ -944,6 +945,17 @@ export class TUI extends Container {
 
 			let buffer = "\x1b[?2026h"; // Begin synchronized output
 
+			// Scroll new overflow into scrollback before repainting in-place.
+			// viewportRepaint() uses absolute addressing and never crosses the terminal
+			// bottom boundary, so the terminal has no reason to scroll — content never
+			// reaches the scrollback buffer. Emitting \r\n from the bottom row here
+			// forces the terminal to scroll naturally before we repaint.
+			const scrollNeeded = overflow - previousViewportTop;
+			if (scrollNeeded > 0) {
+				const scrollCount = Math.min(scrollNeeded, height);
+				buffer += this.#moveToScreenPosition(height - 1, 0);
+				buffer += "\r\n".repeat(scrollCount);
+			}
 			// Move cursor to top-left of the viewport using absolute addressing.
 			buffer += this.#moveToScreenPosition(0, 0);
 
@@ -982,17 +994,22 @@ export class TUI extends Container {
 			fs.appendFileSync(logPath, msg);
 		};
 
-		// First render - just output everything without clearing (assumes clean screen)
-		if (this.#previousLines.length === 0 && !widthChanged) {
+		// First render - write all content lines from start (assumes clean screen).
+		// This populates the scrollback naturally as lines overflow the viewport.
+		// Covers both requestRender() and requestRender(true) on a fresh TUI.
+		if (this.#previousLines.length === 0) {
 			logRedraw("first render");
 			hardReset(false);
 			return;
 		}
 
-		// Width changed - full re-render (line wrapping changes)
+		// Width changed - repaint viewport (line wrapping changed, but preserve scrollback).
+		// Writing only the visible portion avoids duplicating content that is already in the
+		// scrollback at the old width. The old-width scrollback is stale but harmless; it
+		// will be naturally replaced as new content scrolls through.
 		if (widthChanged) {
 			logRedraw(`width changed (${this.#previousWidth} -> ${width})`);
-			hardReset(true);
+			viewportRepaint();
 			return;
 		}
 
