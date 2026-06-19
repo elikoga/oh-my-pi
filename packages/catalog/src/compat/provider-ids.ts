@@ -63,6 +63,8 @@ export type KnownProvider =
 	| "synthetic"
 	| "together"
 	| "umans"
+	| "upb"
+	| "upb-gateway"
 	| "venice"
 	| "vercel-ai-gateway"
 	| "vllm"
