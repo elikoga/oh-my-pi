@@ -79,6 +79,8 @@ export type KnownProvider =
 	| "together"
 	| "typesafe"
 	| "umans"
+	| "upb"
+	| "upb-gateway"
 	| "venice"
 	| "vercel-ai-gateway"
 	| "vllm"

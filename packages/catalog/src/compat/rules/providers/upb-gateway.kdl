@@ -1,0 +1,11 @@
+// Catalog entry for "upb-gateway"; no deployment-contract compat rules are needed.
+// UPB AI Gateway (ai-gateway.uni-paderborn.de) is a LiteLLM proxy routing to
+// OpenAI, GWDG, and UPB PC2 compute backends; discovery owns the roster. Wire
+// compat (LiteLLM reasoning.summary format) is applied by
+// `upbGatewayModelManagerOptions`.
+
+provider "upb-gateway" {
+	default-model "openai.gpt-4o"
+	env "UPB_GATEWAY_API_KEY"
+	discovery label="UPB AI Gateway (LiteLLM)"
+}
