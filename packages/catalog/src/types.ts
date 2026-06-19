@@ -290,7 +290,8 @@ export type OpenAIReasoningFormat =
 	| "kimi"
 	| "qwen"
 	| "qwen-chat-template"
-	| "chat-template";
+	| "chat-template"
+	| "litellm";
 
 export type OpenAIReasoningDisableMode =
 	| "omit"
