@@ -1,0 +1,11 @@
+// Catalog entry for "upb"; no deployment-contract compat rules are needed.
+// UPB AI-Chat (ai-chat.uni-paderborn.de) is an Open WebUI proxy; its catalog is
+// exposed dynamically, so bundled seed rows are omitted and discovery owns the
+// roster. Per-model wire compat (LiteLLM reasoning.summary format) is applied
+// by `upbModelManagerOptions`.
+
+provider "upb" {
+	default-model "openai.gpt-4o"
+	env "UPB_API_KEY"
+	discovery label="UPB AI-Chat"
+}

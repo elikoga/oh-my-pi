@@ -39,8 +39,7 @@ function readConfiguredProvider(): { baseUrl?: string; proxyToken?: string } {
 					? headers["X-OMP-Proxy-Token"]
 					: undefined;
 			return { baseUrl, proxyToken };
-		} catch {
-		}
+		} catch {}
 	}
 	return {};
 }
