@@ -5,6 +5,7 @@
 ### Fixed
 
 - Fixed `pwsh` code blocks rendering without PowerShell syntax colors ([#15008](https://github.com/can1357/oh-my-pi/issues/15008)).
+- Fixed native addon bindings build on NixOS: static vendored Opus (matching the shipped bazel addons), a CMake policy override and project-local toolchain file for CMake 4.x, and bindgen header paths from the active Nix profile.
 
 ## [18.10.2] - 2026-10-12
 
