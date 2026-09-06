@@ -11,6 +11,9 @@
 ### Fixed
 
 - Fixed C++ language inference excluding CUDA header (`.cuh`) files ([#10782](https://github.com/can1357/oh-my-pi/pull/10782) by [@alphastorm](https://github.com/alphastorm)).
+### Fixed
+
+- Fixed native addon bindings build on NixOS: static vendored Opus (matching the shipped bazel addons), a CMake policy override and project-local toolchain file for CMake 4.x, and bindgen header paths from the active Nix profile.
 
 ## [18.1.9] - 2026-09-04
 
