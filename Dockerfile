@@ -22,7 +22,10 @@
 #     FROM ${PI_BASE} AS pi-base
 ###############################################################################
 
-ARG BUN_VERSION=1.4.3
+# 1.4.4 is the first bun release whose bundled brotli carries the fix for
+# CVE-2026-111497 (Node2Shell); 1.4.2/1.4.3 still decode crafted `br` payloads
+# with the vulnerable decoder.
+ARG BUN_VERSION=1.4.4
 
 ############################
 # 1) natives-builder — Rust + Bun → pi_natives.linux-<arch>.node (local cargo)

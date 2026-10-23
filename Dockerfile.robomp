@@ -17,7 +17,10 @@
 ###############################################################################
 
 ARG PI_BASE=oh-my-pi/pi:dev
-ARG BUN_VERSION=1.4.3
+# 1.4.4 is the first bun release whose bundled brotli carries the fix for
+# CVE-2026-111497 (Node2Shell); 1.4.2/1.4.3 still decode crafted `br` payloads
+# with the vulnerable decoder.
+ARG BUN_VERSION=1.4.4
 
 ############################
 # 1) web-builder — Bun + Vite, builds the SolidJS dashboard bundle.
