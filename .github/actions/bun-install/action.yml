@@ -15,7 +15,7 @@ runs:
         run: |
            # bun is baked into the omp-kata runner image — reuse it only when it
            # satisfies the repo pin (package.json "packageManager"). The pin is
-           # either exact ("bun@1.4.2") or a floor ("bun@>=1.4"): an exact pin
+           # either exact ("bun@1.4.4") or a floor ("bun@>=1.4.4"): an exact pin
            # installs that build on mismatch, a floor installs latest when the
            # preloaded bun is older than the floor. A lagging preloaded bun skews
            # version-sensitive codegen (gen:tool-views) and test-runner behavior.
