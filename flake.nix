@@ -92,7 +92,7 @@
             });
         in
         {
-          brotli = prev.brotli.overrideAttrs (_: {
+          brotli = prev.brotli.overrideAttrs (old: {
             version = "1.2.1";
             src = final.fetchFromGitHub {
               owner = "google";
@@ -100,6 +100,21 @@
               tag = "v1.2.1";
               hash = "sha256-llY72cYffDv0ugsH0p89xIPEbElV4L8u7U/Fe8hT3gI=";
             };
+            # nixpkgs appends the upstream CVE-2026-111497 patch to `brotli` for
+            # every node major except 24 (nodejs.nix, sharedLibDeps), so a plain
+            # patch phase aborts against 1.2.1 with "Reversed (or previously
+            # applied) patch detected" and the failure surfaces as a nodejs
+            # build error. Apply tolerantly: skip patches already integrated in
+            # 1.2.1. Remove together with this override.
+            patchPhase = ''
+              runHook prePatch
+              for p in ''${patches}; do
+                if ! patch -p1 --forward --batch < "$p"; then
+                  echo "patch $p is already integrated in brotli 1.2.1 — skipping"
+                fi
+              done
+              runHook postPatch
+            '';
           });
           curl = bumpCurl prev.curl;
           curlFull = bumpCurl prev.curlFull;
