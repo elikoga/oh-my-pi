@@ -107,8 +107,15 @@ services:
       - ${HOME}/.omp/agent/models.container.yml:/srv/agent-home-stage/.omp/agent/models.yml:ro
       - ${HOME}/.agent/AGENTS.md:/srv/agent-home-stage/.agent/AGENTS.md:ro
       - ${HOME}/.agent/rules:/srv/agent-home-stage/.agent/rules:ro
+    # Loopback-only publish. The only intended caller is the host nginx vhost
+    # for robomp.6xr.de, which proxies to http://127.0.0.1:6543
+    # (elikoga-nixos hosts/nixos-4gb-nbg1-1/robomp.nix), and gh-proxy is reached
+    # container-to-container, so nothing legitimate needs a public bind.
+    # 0.0.0.0 made the unauthenticated API world-open: Docker's nat DOCKER chain
+    # DNATs published ports ahead of nixos-fw, so the host firewall never saw
+    # it (`curl http://<host>:6543/api/status` -> 200).
     ports:
-      - "0.0.0.0:6543:8080"
+      - "127.0.0.1:6543:8080"
 
   # ───────────────────────────────────────────────────────────────────────────
   # gh-proxy
