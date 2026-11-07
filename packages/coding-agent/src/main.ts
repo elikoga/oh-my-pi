@@ -44,7 +44,7 @@ import type { SessionPickerOptions } from "@oh-my-pi/pi-tui/apps/session-picker"
 import { fetchBuild } from "./cli/build-service";
 import { applyStartupCwd } from "./cli/startup-cwd";
 import { runAutoUpdate } from "./cli/auto-update";
-import { getLatestRelease, isSourceCheckout, managedInstallName } from "./cli/update-cli";
+import { getLatestRelease, isSourceCheckout, managedInstallName, suggestedUpdateCommand } from "./cli/update-cli";
 import { findConfigFile } from "./config";
 import { ModelRegistry } from "./config/model-registry";
 import { formatModelSelectorValue } from "@oh-my-pi/pi-tui/overlays/model-selector";
@@ -758,7 +758,9 @@ async function runInteractiveMode(
 		);
 		// A resolved version check must not insert its banner into a partial transcript.
 		const notifyNewVersion = (newVersion: string): void => {
-			if (cfgStartupCheckUpdate.get(settings)) mode.showNewVersionNotification(newVersion);
+			if (cfgStartupCheckUpdate.get(settings)) {
+				mode.showNewVersionNotification(newVersion, suggestedUpdateCommand());
+			}
 		};
 		if (cfgUpdateAuto.get(settings)) {
 			void runAutoUpdate(checkedVersionPromise, {

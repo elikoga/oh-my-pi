@@ -9064,8 +9064,8 @@ export class InteractiveMode implements InteractiveModeContext {
 		this.setWorkingMessage(message);
 	}
 
-	showNewVersionNotification(newVersion: string): void {
-		this.#uiHelpers.showNewVersionNotification(newVersion);
+	showNewVersionNotification(newVersion: string, updateCommand?: string): void {
+		this.#uiHelpers.showNewVersionNotification(newVersion, updateCommand);
 	}
 
 	/** Show (or with `null`, clear) background auto-update progress after the welcome banner's version. */

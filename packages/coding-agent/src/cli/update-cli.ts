@@ -48,6 +48,17 @@ const PACKAGE = "@oh-my-pi/pi-coding-agent";
 const HOMEBREW_FORMULA = "can1357/tap/omp";
 const MISE_TOOL = "github:can1357/oh-my-pi";
 const NIX_STORE_DIR = "/nix/store";
+
+/**
+ * Command that updates this fork. The fork carries commits upstream/main does
+ * not have, so it advances by rebasing them onto upstream and rebuilding the
+ * profile that provides `omp`; none of the installers `omp update` drives
+ * (npm, bun, Homebrew, mise, the release binary) knows how to do that. The Nix
+ * store build — this fork's own `nix/package.nix` output — therefore names this
+ * command instead of the upstream "update the flake input and rebuild" advice.
+ */
+const FORK_UPDATE_COMMAND = "my-omp-update";
+
 const RELEASE_METADATA_TIMEOUT_MS = 30_000;
 const BINARY_DOWNLOAD_TIMEOUT_MS = 15 * 60_000;
 
@@ -430,6 +441,23 @@ export async function canSelfUpdate(): Promise<boolean> {
 	if (isSourceCheckout()) return false;
 	if (isPathInDirectory(isCompiledBinary() ? process.execPath : import.meta.dir, NIX_STORE_DIR)) return false;
 	return (await managedInstallName(process.execPath)) === undefined;
+}
+
+/**
+ * Command the startup notice should name for this install. A Nix store build is
+ * this fork's package and advances with {@link FORK_UPDATE_COMMAND}; every other
+ * install shape is owned by `omp update`. Sync on purpose: it runs on the
+ * launch path beside the version check, and the Nix store test is lexical plus
+ * realpath, no package-manager probe.
+ */
+export function suggestedUpdateCommand(): string {
+	const installPath = isCompiledBinary() ? process.execPath : import.meta.dir;
+	return suggestedUpdateCommandForTest(installPath);
+}
+
+/** {@link suggestedUpdateCommand} for an explicit install path; the test seam. */
+export function suggestedUpdateCommandForTest(installPath: string): string {
+	return isPathInDirectory(installPath, NIX_STORE_DIR) ? FORK_UPDATE_COMMAND : `${APP_NAME} update`;
 }
 
 function isSymlinkPath(p: string): boolean {
@@ -2348,6 +2376,11 @@ async function runManagedUpdate(
 			const reason = "This installation is managed by Nix and cannot update itself.";
 			console.log(chalk.yellow(reason));
 			console.log(chalk.dim("Update the flake input or profile that provides omp, then rebuild."));
+			console.log(
+				chalk.dim(
+					`This fork tracks upstream/main: \`${FORK_UPDATE_COMMAND}\` rebases the custom commits, rebuilds, and refreshes the profile.`,
+				),
+			);
 			return { kind: "unsupported", reason };
 		}
 		const installing = (): void => request.onProgress?.({ phase: "installing", version: release.version });

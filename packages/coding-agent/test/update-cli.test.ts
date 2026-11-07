@@ -33,6 +33,7 @@ import {
 	resolveUpdateMethodForTest,
 	resolveUpdateTargetFromPath,
 	shouldForceBinaryUpdate,
+	suggestedUpdateCommandForTest,
 	sweepStaleUpdateArtifacts,
 	updateViaBinaryAt,
 	updateViaManager,
@@ -206,6 +207,13 @@ describe("update-cli install target detection", () => {
 		);
 
 		expect(method).toBe("nix");
+	});
+
+	it("names the fork wrapper for a Nix store build and omp update elsewhere", () => {
+		// A Nix build of this fork cannot run `omp update`; the startup notice
+		// must name the command that actually advances it.
+		expect(suggestedUpdateCommandForTest("/nix/store/0123456789-omp-18.18.0/bin/omp")).toBe("my-omp-update");
+		expect(suggestedUpdateCommandForTest("/Users/test/.bun/bin/omp")).toBe("omp update");
 	});
 
 	it("uses bun update when prioritized omp is inside bun global bin", () => {
