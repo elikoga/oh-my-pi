@@ -499,7 +499,21 @@ export class Composer implements TerminalFrameProvider, NativeSurfaceProvider {
 		const completeScrollback = this.#preferences.completeScrollback;
 		if (!completeScrollback && billedRows < this.#billedChromeRows) this.#billedChromeContracted = true;
 		this.#billedChromeRows = billedRows;
-		const belowFloor = completeScrollback ? after.length : this.#chromeFloor + billedRows;
+		// Bill the frame at the chrome it actually renders, not at its floor. The floor exists so
+		// a *growing* chrome does not commit the rows it displaces (they refill when it shrinks),
+		// but that leaves rows that are neither on screen nor in native scrollback for as long as
+		// a turn-scoped HUD (todo list, subagent panel, working row) stays up: a streamed answer
+		// then reads as cut in the middle at the seam, and scrolling up finds nothing. Billing the
+		// real chrome hands those rows to the container, which commits them in order. The cost is
+		// the design's own band: rows that left the screen cannot come back, so a chrome that
+		// shrinks opens blank space below the live tail until new output fills it. Growth above a
+		// transient root's resting height is the user's own typing (a draft, a dialog) and keeps
+		// the old behaviour: its rows stay live and refill when it clears. Everything else — the
+		// self-clearing todo/subagent/progress HUDs included — is billed, so transcript rows keep
+		// flowing into native history while those are up instead of being hidden and left
+		// uncommitted at the seam.
+		const draftGrowth = completeScrollback ? 0 : Math.max(0, transientRows - transientFloor);
+		const belowFloor = after.length - draftGrowth;
 		// Offer history under capacity pressure only: blocks stay live (and keep
 		// reflowing to the current width) while the screen has room. A batch
 		// leaves the mutable viewport in the same frame it is appended, so its

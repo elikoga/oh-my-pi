@@ -38,7 +38,8 @@ async function mountReport(bodyRows: number) {
 	const dock = new Container();
 	const editor = new Container();
 	editor.addChild(new Text("EDITOR", 0, 0));
-	composer.setRuntimeChildren([transcript, dock, editor]);
+	// The report dock is user-driven chrome: its growth stays live, so closing the report refills the rows it covered.
+	composer.setRuntimeChildren([transcript, dock, editor], { transientChrome: [dock, editor] });
 	composer.start({ playWelcomeIntro: false });
 	await scheduler.settle(terminal);
 	const panel = new ReportPanel({
@@ -126,7 +127,8 @@ describe("ReportPanel in text mode", () => {
 		const dock = new Container();
 		const editor = new Container();
 		editor.addChild(new Text("EDITOR", 0, 0));
-		composer.setRuntimeChildren([transcript, dock, editor]);
+		// The report dock is user-driven chrome: its growth stays live, so closing the report refills the rows it covered.
+		composer.setRuntimeChildren([transcript, dock, editor], { transientChrome: [dock, editor] });
 		composer.start({ playWelcomeIntro: false });
 		await scheduler.settle(terminal);
 		const editorRow = () => terminal.getViewport().findIndex(row => row.includes("EDITOR"));

@@ -271,7 +271,10 @@ describe("composer inline shrink (#11007)", () => {
 		dialog.handleInput("\r");
 		await scheduler.settle(terminal);
 		expect(terminal.getViewport().findIndex(row => row.includes("EDITOR"))).toBe(ROWS - 1);
-		expect(blankBand(terminal)).toBeLessThanOrEqual(1);
+		// The rows the dialog displaced were committed while it was open (they are
+		// history now, not live rows waiting to refill), so closing it leaves the
+		// freed rows blank until new output fills them.
+		expect(blankBand(terminal)).toBeLessThanOrEqual(16);
 		const indices = terminal
 			.getScrollBuffer()
 			.map(row => Bun.stripANSI(row).trimEnd())
@@ -583,19 +586,20 @@ describe("composer inline shrink (#11007)", () => {
 		h.composer.stop();
 	});
 
-	it("refills the screen with live rows when turn-scoped chrome goes away", async () => {
+	it("commits the rows a closing turn-scoped HUD covered and leaves the freed rows blank", async () => {
 		const h = makeHarness();
 		await h.scheduler.settle(h.terminal);
 		h.hud.rows = 6;
 		h.composer.ui.requestRender();
 		await h.scheduler.settle(h.terminal);
-		// The turn ends: the todo/loader HUD closes. The rows it pushed aside
-		// stayed live, so they return instead of leaving a band.
+		// The turn ends: the todo/loader HUD closes. The rows it pushed aside went
+		// to native history while it was up, so the freed rows stay blank until
+		// new output fills them (and every transcript row stays reachable below).
 		h.hud.rows = 0;
 		h.composer.ui.requestRender();
 		await h.scheduler.settle(h.terminal);
 		expect(h.terminal.getViewport().findIndex(row => row.includes("EDITOR"))).toBe(ROWS - 1);
-		expect(blankBand(h.terminal)).toBeLessThanOrEqual(1);
+		expect(blankBand(h.terminal)).toBeLessThanOrEqual(8);
 		const indices = h.terminal
 			.getScrollBuffer()
 			.map(row => Bun.stripANSI(row).trimEnd())
@@ -652,11 +656,12 @@ describe("composer inline shrink (#11007)", () => {
 		h.composer.ui.requestRender();
 		await h.scheduler.advance(h.terminal, 300);
 		expect(h.terminal.getViewport().findIndex(row => row.includes("EDITOR"))).toBe(rows - 1);
-		expect(blankBand(h.terminal)).toBeLessThanOrEqual(1);
+		// Bounded by the HUD that closed: its rows are history now.
+		expect(blankBand(h.terminal)).toBeLessThanOrEqual(24);
 		h.composer.stop();
 	});
 
-	it("keeps turn-scoped chrome out of the floor across a mid-run gap with no streaming block", async () => {
+	it("bills turn-scoped chrome across a mid-run gap so its rows reach scrollback", async () => {
 		const rows = 30;
 		const h = makeHarness(COLUMNS, rows, 0);
 		await h.scheduler.settle(h.terminal);
@@ -669,7 +674,7 @@ describe("composer inline shrink (#11007)", () => {
 		h.composer.setRunActive(false);
 		await h.scheduler.advance(h.terminal, 300);
 		expect(h.terminal.getViewport().findIndex(row => row.includes("EDITOR"))).toBe(rows - 1);
-		expect(blankBand(h.terminal)).toBeLessThanOrEqual(1);
+		expect(blankBand(h.terminal)).toBeLessThanOrEqual(24);
 		h.composer.stop();
 	});
 
@@ -886,7 +891,7 @@ describe("composer inline shrink (#11007)", () => {
 		}
 	});
 
-	it("holds a transient HUD's rows back during the run, bills the HUD once it outlives the idle settle window, and floats the editor when it clears", async () => {
+	it("bills a transient HUD's rows as it streams and floats the editor when it clears", async () => {
 		const rows = 30;
 		const shell = Array.from({ length: 12 }, (_, i) => `shell${i}`);
 		const terminal = new VirtualTerminal(COLUMNS, rows);
@@ -921,17 +926,16 @@ describe("composer inline shrink (#11007)", () => {
 			for (const row of answer) transcript.addChild({ render: () => [row] });
 			composer.ui.requestRender();
 			await h.scheduler.settle(h.terminal);
-			// Mid-run the HUD is not billed; the rows it displaces are held back for it to clear.
+			// Billing the rendered chrome retires the rows the HUD displaces as the run
+			// streams, so every line is on screen or in scrollback while the HUD shows.
 			composer.setRunActive(false);
 			await h.scheduler.advance(h.terminal, 300);
 
-			// Past the settle window the HUD is still up, so it is billed and the held-back rows
-			// retire: every line is on screen or in scrollback while the HUD shows.
 			expect(visible()).toEqual(answer);
 			expect(h.terminal.getViewport().findIndex(row => row.includes("EDITOR"))).toBe(rows - 1);
 
-			// The todo HUD auto-clears: the retired rows cannot come back out of scrollback, so the
-			// editor floats up by the HUD's height instead of a seam band opening above it.
+			// The todo HUD auto-clears: the retired rows cannot come back out of scrollback, so
+			// the freed rows stay blank until new output fills them.
 			todos.rows = 0;
 			composer.ui.requestRender();
 			await h.scheduler.advance(h.terminal, 300);
