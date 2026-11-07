@@ -47,7 +47,7 @@ import { fetchBuild } from "./cli/build-service";
 import { applyStartupCwd } from "./cli/startup-cwd";
 import { runAutoUpdate } from "./cli/auto-update";
 import { managedInstallName } from "./cli/managed-install";
-import { getLatestRelease, isSourceCheckout } from "./cli/update-cli";
+import { getLatestRelease, isSourceCheckout, suggestedUpdateCommand } from "./cli/update-cli";
 import { findConfigFile } from "./config";
 import { cfgNoJudge, cfgNoSpotlight, cfgOffline } from "./config/auxiliary-model-policy";
 import { ModelRegistry } from "./config/model-registry";
@@ -861,7 +861,9 @@ async function runInteractiveMode(
 		);
 		// A resolved version check must not insert its banner into a partial transcript.
 		const notifyNewVersion = (newVersion: string): void => {
-			if (cfgStartupCheckUpdate.get(settings)) mode.showNewVersionNotification(newVersion);
+			if (cfgStartupCheckUpdate.get(settings)) {
+				mode.showNewVersionNotification(newVersion, suggestedUpdateCommand());
+			}
 		};
 		if (cfgUpdateAuto.get(settings)) {
 			void runAutoUpdate(checkedVersionPromise, {
